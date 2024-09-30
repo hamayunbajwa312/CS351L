@@ -1,0 +1,142 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+
+
+
+# Load the dataset
+titanic_data = pd.read_csv('train.csv')
+
+# Display the first few rows
+print(titanic_data.head())
+
+# Visualize the distribution of key features
+plt.figure(figsize=(12, 8))
+
+# Distribution of Pclass
+plt.subplot(2, 2, 1)
+sns.countplot(data=titanic_data, x='Pclass')
+plt.title('Passenger Class Distribution')
+
+# Age distribution
+plt.subplot(2, 2, 2)
+sns.histplot(titanic_data['Age'].dropna(), bins=30, kde=True)
+plt.title('Age Distribution')
+
+# Gender distribution
+plt.subplot(2, 2, 3)
+sns.countplot(data=titanic_data, x='Sex')
+plt.title('Gender Distribution')
+
+# Fare distribution
+plt.subplot(2, 2, 4)
+sns.histplot(titanic_data['Fare'], bins=30, kde=True)
+plt.title('Fare Distribution')
+
+plt.tight_layout()
+plt.show()
+
+# Check for missing values
+print(titanic_data.isnull().sum())
+
+
+
+
+
+# Split the dataset
+X = titanic_data.drop('Survived', axis=1)
+y = titanic_data['Survived']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# k-NN model
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(X_train, y_train)
+
+# Decision Tree model
+dt = DecisionTreeClassifier(random_state=42)
+dt.fit(X_train, y_train)
+
+
+
+
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+# Predictions
+knn_pred = knn.predict(X_test)
+dt_pred = dt.predict(X_test)
+
+# Evaluation metrics for k-NN
+knn_accuracy = accuracy_score(y_test, knn_pred)
+knn_precision = precision_score(y_test, knn_pred)
+knn_recall = recall_score(y_test, knn_pred)
+knn_f1 = f1_score(y_test, knn_pred)
+
+# Evaluation metrics for Decision Tree
+dt_accuracy = accuracy_score(y_test, dt_pred)
+dt_precision = precision_score(y_test, dt_pred)
+dt_recall = recall_score(y_test, dt_pred)
+dt_f1 = f1_score(y_test, dt_pred)
+
+# Display the results
+metrics = {
+    'Model': ['k-NN', 'Decision Tree'],
+    'Accuracy': [knn_accuracy, dt_accuracy],
+    'Precision': [knn_precision, dt_precision],
+    'Recall': [knn_recall, dt_recall],
+    'F1 Score': [knn_f1, dt_f1],
+}
+
+metrics_df = pd.DataFrame(metrics)
+print(metrics_df)
+
+
+
+
+
+
+# Using only 'Pclass' and 'Fare' for visualization purposes
+X_vis = X[['Pclass', 'Fare']]
+X_vis_train, X_vis_test, y_vis_train, y_vis_test = train_test_split(X_vis, y, test_size=0.3, random_state=42)
+
+# Plot decision boundaries for k-NN
+def plot_decision_boundary(model, X, y):
+    x_min, x_max = X.iloc[:, 0].min() - 1, X.iloc[:, 0].max() + 1
+    y_min, y_max = X.iloc[:, 1].min() - 1, X.iloc[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01),
+                         np.arange(y_min, y_max, 0.01))
+    Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    
+    plt.contourf(xx, yy, Z, alpha=0.3)
+    plt.scatter(X.iloc[:, 0], X.iloc[:, 1], c=y, edgecolor='k')
+    plt.title(f'Decision Boundary for {model.__class__.__name__}')
+    plt.xlabel('Pclass')
+    plt.ylabel('Fare')
+
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plot_decision_boundary(knn, X_vis_train, y_vis_train)
+plt.title('k-NN Decision Boundary')
+
+plt.subplot(1, 2, 2)
+plot_decision_boundary(dt, X_vis_train, y_vis_train)
+plt.title('Decision Tree Decision Boundary')
+
+plt.tight_layout()
+plt.show()
+
+
+
+
+# Bar chart for performance metrics
+metrics_df.set_index('Model').plot(kind='bar', figsize=(10, 6))
+plt.title('Model Performance Comparison')
+plt.ylabel('Score')
+plt.xticks(rotation=0)
+plt.show()
